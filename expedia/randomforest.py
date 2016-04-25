@@ -14,10 +14,13 @@ COMPONET_NUM = 35
 
 def get5Best(x):
     result = []
-    for z in x.argsort()[::-1][:5]:
-        if z!=0:
+    for z in x.argsort()[::-1]:
+        if np.any(z):
             result.append(z)
-    return " ".join([str(int(z)) for z in result])
+    #stuff = np.array([])
+    #return np.concatenate(([stuff, [str(int(z)) for z in result]]))
+    return np.asarray(result)
+    #return " ".join([str(int(z)) for z in result])
 
 def getBest(predicts, cluster_ids):
 	result = []
@@ -57,6 +60,7 @@ def main():
 	
 	y_train = train[['hotel_cluster']]
 	y_train = y_train.fillna(0)
+	print y_train
 	#print y_train
 	#x_train = train.values[1:10] + train.values[12:0]
 
@@ -69,9 +73,9 @@ def main():
 
 	# Run SVC on training data
 	print "Train svm"
-	svc = SVC(gamma=0.05, probability=True)
-	#rf = RandomForestClassifier(n_estimators=100, n_jobs=2)
-	#svc = BaggingClassifier(rf, n_estimators=2, n_jobs=2)
+	#svc = SVC(gamma=0.05, probability=True)
+	rf = RandomForestClassifier(n_estimators=100, n_jobs=2)
+	svc = BaggingClassifier(rf, n_estimators=2, n_jobs=2)
 	svc.fit(x_train, y_train.values.ravel())
 
 	# Predict with testing data
@@ -86,11 +90,23 @@ def main():
 	#np.savetxt('submission.csv',subm,fmt='%d',delimiter=',',header='id,hotel_cluster',comments='')
 
 	print get5Best(predict)
-	#print np.apply_along_axis(get5Best, 1, predict)
+	print np.apply_along_axis(get5Best, 1, predict)
 	#submit = pd.read_csv('submission.csv')
 	#submit['hotel_cluster'] = np.apply_along_axis(get5Best, 1, predict)
 	#submit.head()
 	#submit.to_csv('submission_20160418_ent_1.csv', index=False)
+
+	stuff = np.apply_along_axis(get5Best, 1, predict)
+
+	subm = np.empty((len(predict),6))
+	subm[:,0] = np.arange(1,len(predict)+1)
+	subm[:,1] = stuff[:,0]
+	subm[:,2] = stuff[:,1]
+	subm[:,3] = stuff[:,2]
+	subm[:,4] = stuff[:,3]
+	subm[:,5] = stuff[:,4]
+	#np.savetxt('submission.csv',subm,fmt='%d',delimiter=',',header='id,hotel_cluster',comments='')
+	np.savetxt('submission.csv',subm,fmt='%d,%d %d %d %d %d',delimiter=',',header='id,hotel_cluster',comments='')
 
 if __name__=="__main__":
     main()
