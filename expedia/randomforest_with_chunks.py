@@ -25,6 +25,11 @@ def main():
 	#train = pd.read_csv("input/train_1000.csv")
 	#train_chunk = pd.read_csv('input/train.csv', chunksize=100000)
 
+	# Read output csv format in case the file does not exists
+	print ("Loading sample submission csv".)
+	submit = pd.read_csv('sample_submission.csv')
+	print ("Sample submission loaded.")
+
 	# Training cols
 	print ("Loading training csv.")
 	#train_cols = ['site_name', 'posa_continent', 'user_location_country', 'user_location_region', 'user_location_city', 'orig_destination_distance', 'user_id', 'is_mobile', 'is_package', 'channel', 'srch_adults_cnt', 'srch_children_cnt', 'srch_rm_cnt', 'srch_destination_id', 'srch_destination_type_id', 'hotel_continent', 'hotel_country', 'hotel_market', 'hotel_cluster']
@@ -60,7 +65,7 @@ def main():
 	#test  = pd.read_csv("input/test_1000.csv")
 	test_chunk = pd.read_csv('input/test.csv', chunksize=50000)
 	print ("Testing csv loaded.")
-	
+
 	print ("Begin testing.")
 	predict = np.array([])
 	# Read each chunk to test
@@ -72,12 +77,12 @@ def main():
 			predict = np.concatenate( [predict, bclf.predict_proba(test_X)])
 		else:
 			predict = bclf.predict_proba(test_X)
-		print (i)
+		print ("Chunk id: " + str(i))
 	#print predict
 
 	#print get5Best(predict)
 	#print np.apply_along_axis(get5Best, 1, predict)
-	submit = pd.read_csv('sample_submission.csv')
+	#submit = pd.read_csv('sample_submission.csv')
 	submit['hotel_cluster'] = np.apply_along_axis(get5Best, 1, predict)
 	submit.head()
 	submit.to_csv('submission_final.csv', index=False)
