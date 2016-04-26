@@ -5,18 +5,9 @@ from sklearn.svm import SVC
 from numpy import genfromtxt, savetxt
 
 from sklearn.ensemble import RandomForestClassifier, BaggingClassifier
-from sklearn.cross_validation import cross_val_score
-
-CROSS_FOLDS = 5
 
 np.set_printoptions(threshold=np.nan)
 
-def map5scorer(estimator, train, target):
-	import ml_metrics as metrics
-
-	map5k = metrics.mapk(target, estimator.fit(train,target))
-	print(map5k)
-	return map5k
 
 def get5Best(x):
     result = []
@@ -33,6 +24,11 @@ def main():
 	# Read competition data files:
 	#train = pd.read_csv("input/train_1000.csv")
 	#train_chunk = pd.read_csv('input/train.csv', chunksize=100000)
+
+	# Read output csv format in case the file does not exists
+	print ("Loading sample submission csv".)
+	submit = pd.read_csv('sample_submission.csv')
+	print ("Sample submission loaded.")
 
 	# Training cols
 	print ("Loading training csv.")
@@ -62,13 +58,34 @@ def main():
 	#svc = SVC(gamma=0.05, probability=True)
 	rf = RandomForestClassifier(n_estimators=50, max_depth=10, n_jobs=4)
 	bclf = BaggingClassifier(rf, n_estimators=2, n_jobs=4)
+	bclf.fit(x_train, y_train)
 	print ("Training done.")
 
-	scores = cross_val_score(bclf, x_train, y_train, cv=CROSS_FOLDS, scoring=map5scorer(bclf,x_train,y_train))
-	print scores
+	print ("Loading testing csv.")
+	#test  = pd.read_csv("input/test_1000.csv")
+	test_chunk = pd.read_csv('input/test.csv', chunksize=50000)
+	print ("Testing csv loaded.")
+
+	print ("Begin testing.")
+	predict = np.array([])
+	# Read each chunk to test
+	for i, chunk in enumerate(test_chunk):
+		#test_X = chunk[['site_name', 'posa_continent', 'user_location_country', 'user_location_region', 'user_location_city', 'orig_destination_distance', 'user_id', 'is_mobile', 'is_package', 'channel', 'srch_adults_cnt', 'srch_children_cnt', 'srch_rm_cnt', 'srch_destination_id', 'srch_destination_type_id', 'hotel_continent', 'hotel_country', 'hotel_market']].values
+		test_X = chunk[['site_name', 'user_location_region', 'is_package', 'srch_adults_cnt', 'srch_children_cnt', 'srch_destination_id', 'hotel_market', 'hotel_country']].values
+		test_X = np.nan_to_num(test_X)
+		if i > 0:
+			predict = np.concatenate( [predict, bclf.predict_proba(test_X)])
+		else:
+			predict = bclf.predict_proba(test_X)
+		print ("Chunk id: " + str(i))
+	#print predict
+
 	#print get5Best(predict)
 	#print np.apply_along_axis(get5Best, 1, predict)
+	#submit = pd.read_csv('sample_submission.csv')
+	submit['hotel_cluster'] = np.apply_along_axis(get5Best, 1, predict)
+	submit.head()
+	submit.to_csv('submission_final.csv', index=False)
 
 if __name__=="__main__":
     main()
-
