@@ -1,3 +1,3 @@
 Solution                               | Validation with MAP@5   | Submission score
 leakage_solution_with_validation.py    | 0.5358                  |
-experiments_with_truth.py      | 0.5960                  |
+experiments_with_truth.py              | 0.5960                  | 0.49642
