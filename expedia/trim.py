@@ -10,6 +10,7 @@ train_df = pd.read_csv('input/train_1000.csv', header=0)
 test_df = pd.read_csv('input/test_1000.csv', header=0)
 
 def fillNansWithMean(dataframe):
+
     temp = []
     for x in dataframe:
         if (not np.isnan(x)):
