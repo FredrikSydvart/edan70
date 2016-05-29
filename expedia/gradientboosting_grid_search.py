@@ -1,13 +1,13 @@
 import numpy as np
 from numpy import genfromtxt
 
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.grid_search import GridSearchCV
+from sklearn.ensemble import GradientBoostingClassifier
 
 # Matplot to plot
 import matplotlib.pyplot as plt
 
-CROSS_FOLDS = 2
+CROSS_FOLDS = 4
 
 np.set_printoptions(threshold=np.nan)
 
@@ -27,7 +27,7 @@ def main():
 
     # Training cols
     print ("Loading training csv.")
-    training = genfromtxt(open('input/train_10000.csv', 'r'), delimiter=',', dtype='f8')[1:]
+    training = genfromtxt(open('input/train_1000.csv', 'r'), delimiter=',', dtype='f8')[1:]
     # All columns except target
     train = [x[:-1] for x in training]
     train = np.nan_to_num(train)
@@ -38,24 +38,29 @@ def main():
     target = target.ravel()
     print ("Loading done.")
 
-    print ("Training Random Forest and doing Grid search with cross folds.")
+    print ("Training Gradient Boosting and doing Grid search with cross folds.")
     # Settings
-    estimate_range = range(450, 900, 50)
-    depth = range(1,3)
+    estimate_range = range(1, 20, 2)
+    #learningrate = [x * 0.01 for x in range(5, 10)]
+    learningrate = [0.02]
+    #depth = range(1, 3)
+    depth = [2]
+
     # Generate parameters to search for
     tuned_parameters = []
     for n in estimate_range:
-        params = {'n_estimators': [n], 'n_jobs': [2]}
-        for d in depth:
-            params['max_depth'] = [d]
+        params = {'n_estimators': [n]}
+        for m in learningrate:
+            params['learning_rate'] = [m]
+            for d in depth:
+                params['max_depth'] = [d]
             tuned_parameters.append(params)
-        tuned_parameters.append(params)
 
-    # Create Random Forest estimator model
-    randomforest  = RandomForestClassifier()
+    # Create Gradient Boosting estimator model
+    gradientboosting = GradientBoostingClassifier()
 
     # Create GridSearch with params and fit to training
-    gridsearch    = GridSearchCV(estimator=randomforest, param_grid=tuned_parameters, cv=CROSS_FOLDS, scoring=map5eval, verbose=2)
+    gridsearch    = GridSearchCV(estimator=gradientboosting, param_grid=tuned_parameters, cv=CROSS_FOLDS, scoring=map5eval, verbose=2)
     gridsearch.fit(train, target)
     print ("Searching done.")
 
@@ -66,7 +71,7 @@ def main():
     print ("------------------------")
 
     # The mean score, the 95% confidence interval and the scores are printed and prepared for the plot
-    # Scores for each n_estimators are added independent of depth
+    # Scores for each n_estimators are added independent of depth or learning rate
     estimate_scores = []
     for params, mean_score, score in gridsearch.grid_scores_:
         print("%0.3f (+/-%0.03f) for %r" % (mean_score, score.std() * 2, params))
@@ -88,11 +93,11 @@ def main():
     for index, k in enumerate(estimate_scores):
         estimate_scores[index] = round(estimate_scores[index], 4)
 
-    # Plot result for estimators independent of depth
+    # Plot result for estimators independent of depth or learning rate
     plt.plot(estimate_range, estimate_scores)
-    plt.xlabel('Value of estimators for Random Forest Classifier')
+    plt.xlabel('Value of estimators for Gradient Boosting Classifier')
     plt.ylabel('Cross-Validated Accuracy')
-    plt.savefig('randomforest_grid_search.png')
+    plt.savefig('gradientboosting_grid_search.png')
     plt.show()
 
     print ("Done.")
