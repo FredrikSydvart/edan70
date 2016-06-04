@@ -1,89 +1,112 @@
-import pandas as pd
 import numpy as np
+from numpy import genfromtxt
+
+from sklearn.grid_search import GridSearchCV
 from sklearn.decomposition import PCA
 from sklearn.svm import SVC
-from numpy import genfromtxt, savetxt
 
-from sklearn.ensemble import RandomForestClassifier, BaggingClassifier
+# Matplot to plot
+#import matplotlib.pyplot as plt
+
+CROSS_FOLDS = 4
 
 np.set_printoptions(threshold=np.nan)
 
-
-def get5Best(x):
-    result = []
-    for z in x.argsort()[::-1][:5]:
-        if z != 0:
-            result.append(z)
-    #stuff = np.array([])
-    #return np.concatenate(([stuff, [str(int(z)) for z in result]]))
-    #return np.asarray(result)
-    return " ".join([str(int(z)) for z in result])
+# Uses the Mean Average Precision at 5 (MAP@5) evaluation
+def map5eval(estimator, train, target):
+    prediction = estimator.predict_proba(train)
+    actual = target
+    predicted = prediction.argsort(axis=1)[:,-np.arange(1,6)]
+    metric = 0.
+    for i in range(5):
+        metric += np.sum(actual==predicted[:,i])/(i+1)
+    metric /= actual.shape[0]
+    return metric
 
 def main():
     # The competition datafiles are in the directory /input
-    # Read competition data files:
-    #train = pd.read_csv("input/train_1000.csv")
-    #train_chunk = pd.read_csv('input/train.csv', chunksize=100000)
-
-    # Read output csv format in case the file does not exists
-    print ("Loading sample submission csv.")
-    submit = pd.read_csv('sample_submission.csv')
-    print ("Sample submission loaded.")
 
     # Training cols
     print ("Loading training csv.")
-    #train_cols = ['site_name', 'posa_continent', 'user_location_country', 'user_location_region', 'user_location_city', 'orig_destination_distance', 'user_id', 'is_mobile', 'is_package', 'channel', 'srch_adults_cnt', 'srch_children_cnt', 'srch_rm_cnt', 'srch_destination_id', 'srch_destination_type_id', 'hotel_continent', 'hotel_country', 'hotel_market', 'hotel_cluster']
-    train_cols = ['site_name', 'user_location_region', 'is_package', 'srch_adults_cnt', 'srch_children_cnt', 'srch_destination_id', 'hotel_market', 'hotel_country', 'hotel_cluster']
-    train = pd.DataFrame(columns=train_cols)
-    train_chunk = pd.read_csv('input/train.csv', chunksize=100000)
-    print ("Training csv loaded.")
+    #training = genfromtxt(open('input/train.csv', 'r'), delimiter=',', dtype='f8')[1:]
+    training = genfromtxt(open('input/train_1000.csv', 'r'), delimiter=',', dtype='f8')[1:]
+    # All columns except target
+    train = [x[:-1] for x in training]
+    train = np.nan_to_num(train)
 
-    # Read each chunk to train
-    for chunk in train_chunk:
-        #train = pd.concat( [ train, chunk ] )
-        train = pd.concat( [ train, chunk[chunk['is_booking']==1][train_cols] ] )
-    # Load each column
-    #train.head()
-    #x_train = train[['site_name', 'posa_continent', 'user_location_country', 'user_location_region', 'user_location_city', 'orig_destination_distance', 'user_id', 'is_mobile', 'is_package', 'channel', 'srch_adults_cnt', 'srch_children_cnt', 'srch_rm_cnt', 'srch_destination_id', 'srch_destination_type_id', 'hotel_continent', 'hotel_country', 'hotel_market']].values
-    x_train = train[['site_name', 'user_location_region', 'is_package', 'srch_adults_cnt', 'srch_children_cnt', 'srch_destination_id', 'hotel_market', 'hotel_country']].values
-    #x_train = np.nan_to_num(x_train)
-    #x_train = x_train.fillna(0)
-    y_train = train['hotel_cluster'].values
-    #y_train = y_train.fillna(0)
-    #y_train = np.nan_to_num(y_train)
+    # Only target column
+    target = [x[-1:] for x in training]
+    target = np.nan_to_num(target)
+    target = target.ravel()
+    print ("Loading done.")
+
+    print ("Training Support Vector Machine and doing Grid search with cross folds.")
+    # Settings
+
+    C = range(1,10)
+    #kerneltype = ['linear','poly','rbf','sigmoid']
+    kerneltype = ['linear', 'rbf', 'sigmoid']
+
+    gamma = range(1,25)
 
 
+    # Generate parameters to search for
+    tuned_parameters = []
+    for n, index in enumerate(kerneltype):
+        params = {'kernel': [index]}
+        for m in gamma:
+            params['gamma'] = [0.1/len(train)+m*0.1/len(train)]
+            for d in C:
+                params['C'] = [0.1+0.2*d]
+            tuned_parameters.append(params)
 
-    # Run SVC on training data
-    print "Train svm"
-    svc = SVC(gamma=0.05)
-    svc.fit(x_train, y_train)
+    # Create Gradient Boosting estimator model
+    #gradientboosting = GradientBoostingClassifier()
+    svm = SVC(probability=True)
 
-    print ("Loading testing csv.")
-    #test  = pd.read_csv("input/test_1000.csv")
-    test_chunk = pd.read_csv('input/test.csv', chunksize=50000)
-    print ("Testing csv loaded.")
+    # Create GridSearch with params and fit to training
+    gridsearch    = GridSearchCV(estimator=svm, param_grid=tuned_parameters, cv=CROSS_FOLDS, scoring=map5eval, verbose=2)
+    gridsearch.fit(train, target)
+    print ("Searching done.")
 
-    print ("Begin testing.")
-    predict = np.array([])
-    # Read each chunk to test
-    for i, chunk in enumerate(test_chunk):
-        #test_X = chunk[['site_name', 'posa_continent', 'user_location_country', 'user_location_region', 'user_location_city', 'orig_destination_distance', 'user_id', 'is_mobile', 'is_package', 'channel', 'srch_adults_cnt', 'srch_children_cnt', 'srch_rm_cnt', 'srch_destination_id', 'srch_destination_type_id', 'hotel_continent', 'hotel_country', 'hotel_market']].values
-        test_X = chunk[['site_name', 'user_location_region', 'is_package', 'srch_adults_cnt', 'srch_children_cnt', 'srch_destination_id', 'hotel_market', 'hotel_country']].values
-        test_X = np.nan_to_num(test_X)
-        if i > 0:
-            predict = np.concatenate( [predict, svc.predict_proba(test_X)])
-        else:
-            predict = svc.predict_proba(test_X)
-        print ("Chunk id: " + str(i))
-    #print predict
+    # Summarize the results of the grid search
+    print ("\n------------------------")
+    print ("Best score: \t" + str(gridsearch.best_score_))
+    print ("Best params: \t" + str(gridsearch.best_params_))
+    print ("------------------------")
 
-    #print get5Best(predict)
-    #print np.apply_along_axis(get5Best, 1, predict)
-    #submit = pd.read_csv('sample_submission.csv')
-    submit['hotel_cluster'] = np.apply_along_axis(get5Best, 1, predict)
-    submit.head()
-    submit.to_csv('submission_svm.csv', index=False)
+    # The mean score, the 95% confidence interval and the scores are printed and prepared for the plot
+    # Scores for each n_estimators are added independent of depth or learning rate
+    estimate_scores = []
+    for params, mean_score, score in gridsearch.grid_scores_:
+        print("%0.3f (+/-%0.03f) for %r" % (mean_score, score.std() * 2, params))
+
+        # For every same param, increase average of score
+        estimators = params['C']
+        add = True
+        for index_estimator, k_estimator in enumerate([1,2,3,4,5,6,7,8,9,10]):
+            for index_score, k_score in enumerate(estimate_scores):
+                if estimators == k_estimator:
+                    if index_estimator == index_score:
+                        estimate_scores[index_score] = (estimate_scores[index_score] + mean_score) / 2
+                        add = False
+        if add:
+            estimate_scores.append(mean_score)
+    print ("------------------------")
+
+    # Round for nicer matplot
+    for index, k in enumerate(estimate_scores):
+        estimate_scores[index] = round(estimate_scores[index], 4)
+
+    # Plot result for estimators independent of depth or learning rate
+    #plt.plot([1,2,3,4,5,6,7,8,9,10], estimate_scores)
+    #plt.xlabel('Value of estimators for Gradient Boosting Classifier')
+    #plt.ylabel('Cross-Validated Accuracy')
+    #plt.savefig('svm.png')
+    #plt.show()
+
+    print ("Done.")
 
 if __name__=="__main__":
     main()
+
