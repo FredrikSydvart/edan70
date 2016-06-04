@@ -42,7 +42,6 @@ def main():
     for chunk in train_chunk:
         #train = pd.concat( [ train, chunk ] )
         train = pd.concat( [ train, chunk[chunk['is_booking']==1][train_cols] ] )
-        print ("Chunk done")
     # Load each column
     #train.head()
     #x_train = train[['site_name', 'posa_continent', 'user_location_country', 'user_location_region', 'user_location_city', 'orig_destination_distance', 'user_id', 'is_mobile', 'is_package', 'channel', 'srch_adults_cnt', 'srch_children_cnt', 'srch_rm_cnt', 'srch_destination_id', 'srch_destination_type_id', 'hotel_continent', 'hotel_country', 'hotel_market']].values
@@ -53,7 +52,7 @@ def main():
     #y_train = y_train.fillna(0)
     #y_train = np.nan_to_num(y_train)
 
-    # Run RandomForest on training data
+
 
     # Run SVC on training data
     print "Train svm"
@@ -84,7 +83,7 @@ def main():
     #submit = pd.read_csv('sample_submission.csv')
     submit['hotel_cluster'] = np.apply_along_axis(get5Best, 1, predict)
     submit.head()
-    submit.to_csv('submission_random_forest.csv', index=False)
+    submit.to_csv('submission_svm.csv', index=False)
 
 if __name__=="__main__":
     main()
