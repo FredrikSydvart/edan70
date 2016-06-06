@@ -11,7 +11,7 @@ N1 = 2        # number of part
 
 def run_solution():
     print('Preparing arrays...')
-    f = open("input/train.csv", "r")
+    f = open("input/train_10000.csv", "r")
     f.readline()
     best_hotels_od_ulc = defaultdict(lambda: defaultdict(int))
     best_hotels_search_dest = defaultdict(lambda: defaultdict(int))
@@ -71,12 +71,12 @@ def run_solution():
     ###########################
     if validate == 1:
         print('Validation...')
-        f = open("input/train.csv", "r")
+        f = open("input/train_10000.csv", "r")
     else:
         print('Generate submission...')
-        f = open("input/test.csv", "r")
+        f = open("input/test_10000.csv", "r")
     now = datetime.datetime.now()
-    path = 'submission_' + str(now.strftime("%Y-%m-%d-%H-%M")) + '.csv'
+    path = 'leakage_solution_with_validation_submission_' + str(now.strftime("%Y-%m-%d-%H-%M")) + '.csv'
     out = open(path, "w")
     f.readline()
     total = 0

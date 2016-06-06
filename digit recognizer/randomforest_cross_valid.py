@@ -1,6 +1,5 @@
 from sklearn.ensemble import RandomForestClassifier
-from numpy import genfromtxt, savetxt
-import numpy as np
+from numpy import genfromtxt
 
 # Cross valid score
 from sklearn.cross_validation import cross_val_score
@@ -17,7 +16,6 @@ def main():
     dataset = genfromtxt(open('input/train.csv','r'), delimiter=',', dtype='f8')[1:]
     target = [x[0] for x in dataset]
     train = [x[1:] for x in dataset]
-    test = genfromtxt(open('input/test.csv','r'), delimiter=',', dtype='f8')[1:]
 
     # Search for an optimal value of estimates for RandomForestClassifier
     estimate_range = range(80, 220,5)
@@ -39,17 +37,6 @@ def main():
     plt.ylabel('Cross-Validated Accuracy')
     plt.savefig('randomforest_cross_valid_5.png')
     plt.show()
-
-    # # array from 0 to 28000
-    # i = np.arange(1, 28001);
-
-    # with open('randomforest_submission.csv', 'w') as file:
-    # 	file.write("ImageId,Label\n")
-    # 	for index, value in enumerate(np.nditer(result)):
-    # 		file.write(str(index + 1) + "," + str(value) + "\n")
-
-
-    #savetxt('submission2.csv', np.hstack([i, result]), delimiter=',', fmt='%u', header="\"ImageId\", \"Label\"")
 
 if __name__=="__main__":
     main()

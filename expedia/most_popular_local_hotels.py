@@ -19,9 +19,9 @@ most_frequent = defaultdict(str)
 for k in destination_clusters:
     most_frequent[k] = get_top5(destination_clusters[k])
 
-with open("submission_most_popular.csv", "w") as outfile:
-    outfile.write("id,hotel_cluster\n")
+with open("submission_most_popular.csv", "w") as f:
+    f.write("id,hotel_cluster\n")
     for i, row in enumerate(DictReader(open("input/test.csv"))):
-        outfile.write("%d,%s\n"%(i,most_frequent[row["srch_destination_id"]]))
+        f.write("%d,%s\n"%(i,most_frequent[row["srch_destination_id"]]))
         if i % 1000000 == 0:
             print("%s\t%s"%(i, datetime.now() - start))

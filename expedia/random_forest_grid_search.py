@@ -27,7 +27,7 @@ def main():
 
     # Training cols
     print ("Loading training csv.")
-    training = genfromtxt(open('input/train_10000.csv', 'r'), delimiter=',', dtype='f8')[1:]
+    training = genfromtxt(open('input/train.csv', 'r'), delimiter=',', dtype='f8')[1:]
     # All columns except target
     train = [x[:-1] for x in training]
     train = np.nan_to_num(train)
@@ -92,7 +92,7 @@ def main():
     plt.plot(estimate_range, estimate_scores)
     plt.xlabel('Value of estimators for Random Forest Classifier')
     plt.ylabel('Cross-Validated Accuracy')
-    plt.savefig('randomforest_grid_search.png')
+    plt.savefig('random_forest_grid_search.png')
     plt.show()
 
     print ("Done.")

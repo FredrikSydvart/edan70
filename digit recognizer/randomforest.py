@@ -1,5 +1,5 @@
 from sklearn.ensemble import RandomForestClassifier
-from numpy import genfromtxt, savetxt
+from numpy import genfromtxt
 import numpy as np
 
 def main():
@@ -9,11 +9,10 @@ def main():
     train = [x[1:] for x in dataset]
     test = genfromtxt(open('input/test.csv','r'), delimiter=',', dtype='f8')[1:]
     
-    #create and train the random forest
-    #multi-core CPUs can use: rf = RandomForestClassifier(n_estimators=100, n_jobs=2)
+    # create and train the random forest
     rf = RandomForestClassifier(n_estimators=100, n_jobs=2)
 
-    n_samples = len(train)
+    #n_samples = len(train)
     #train_data = train[0].reshape((n_samples, -1))
     #test_data = test.reshape((n_samples, -1))
 
@@ -22,16 +21,10 @@ def main():
     # result from prediction
     result = rf.predict(test).astype(int)
 
-    # array from 0 to 28000
-    i = np.arange(1, 28001);
-
-    with open('randomforest_submission.csv', 'w') as file:
-    	file.write("ImageId,Label\n")
-    	for index, value in enumerate(np.nditer(result)):
-    		file.write(str(index + 1) + "," + str(value) + "\n")
-
-
-    #savetxt('submission2.csv', np.hstack([i, result]), delimiter=',', fmt='%u', header="\"ImageId\", \"Label\"")
+    with open('randomforest_submission.csv', 'w') as f:
+        f.write("ImageId,Label\n")
+        for index, value in enumerate(np.nditer(result)):
+            f.write(str(index + 1) + "," + str(value) + "\n")
 
 if __name__=="__main__":
     main()
